@@ -1,5 +1,5 @@
 % 2019-02-25. Leonardo Molina.
-% 2019-02-25. Last modified.
+% 2019-02-26. Last modified.
 classdef StimBoxGUI < handle
     properties (Access = private)
         handles
@@ -8,10 +8,10 @@ classdef StimBoxGUI < handle
         startState = 1
         colors = struct('success', [1.00, 1.00, 1.00], 'failure', [1.00, 0.25, 0.25])
         
-        duration0 = 500
-        duration1 = 500
+        duration0 = 1
+        duration1 = 1
         repetitions = 10
-        port = 'COM3'
+        port = 'COM7'
         status = 'disconnected'
         ticker
     end
@@ -28,10 +28,10 @@ classdef StimBoxGUI < handle
             w = 150;
             h = 30;
             
-            uicontrol('Position', [0, 4 * h, w, h], 'Style', 'Text', 'String', 'Duration OFF (ms):');
+            uicontrol('Position', [0, 4 * h, w, h], 'Style', 'Text', 'String', 'Duration OFF (s):');
             obj.handles.duration0 = uicontrol('Position', [w, 4 * h, w, h], 'Style', 'Edit', 'String', sprintf('%d', obj.duration0), 'Callback', @(h, ~)obj.validate(h));
             
-            uicontrol('Position', [0, 3 * h, w, h], 'Style', 'Text', 'String', 'Duration ON (ms):');
+            uicontrol('Position', [0, 3 * h, w, h], 'Style', 'Text', 'String', 'Duration ON (s):');
             obj.handles.duration1 = uicontrol('Position', [w, 3 * h, w, h], 'Style', 'Edit', 'String', sprintf('%d', obj.duration1), 'Callback', @(h, ~)obj.validate(h));
             
             uicontrol('Position', [0, 2 * h, w, h], 'Style', 'Text', 'String', 'Repetitions:');
@@ -151,7 +151,7 @@ classdef StimBoxGUI < handle
         function validate(obj, h)
             switch h
                 case obj.handles.duration0
-                    [number, success] = validateRange(h.String, 0, 16777);
+                    [number, success] = validateRange(h.String, 0, 4294.95);
                     if success
                         obj.duration0 = number;
                         h.BackgroundColor = obj.colors.success;
@@ -160,7 +160,7 @@ classdef StimBoxGUI < handle
                         h.BackgroundColor = obj.colors.failure;
                     end
                 case obj.handles.duration1
-                    [number, success] = validateRange(h.String, 0, 16777);
+                    [number, success] = validateRange(h.String, 0, 4294.95);
                     if success
                         obj.duration1 = number;
                         h.BackgroundColor = obj.colors.success;
@@ -169,7 +169,7 @@ classdef StimBoxGUI < handle
                         h.BackgroundColor = obj.colors.failure;
                     end
                 case obj.handles.repetitions
-                    [number, success] = validateInteger(h.String, 0, 16777216);
+                    [number, success] = validateInteger(h.String, 0, 4294967295);
                     if success
                         obj.repetitions = number;
                         h.BackgroundColor = obj.colors.success;

@@ -1,5 +1,5 @@
 % 2019-02-25. Leonardo Molina.
-% 2019-02-25. Last modified.
+% 2019-02-26. Last modified.
 classdef StimBox < handle
     properties (Constant)
         baudrate = 115200
@@ -59,19 +59,22 @@ classdef StimBox < handle
         end
         
         function bytes = encode(pin, state, duration0, duration1, repetitions)
-            duration0 = round(duration0 * 1e3);
-            duration1 = round(duration1 * 1e3);
+            duration0 = round(duration0 * 1e6);
+            duration1 = round(duration1 * 1e6);
             bytes = zeros(1, 10, 'uint8');
             bytes(01) = bitor(pin, bitshift(state, 7));
-            bytes(02) = bitand(bitshift(duration0, -16), 255);
-            bytes(03) = bitand(bitshift(duration0, -08), 255);
-            bytes(04) = bitand(bitshift(duration0, -00), 255);
-            bytes(05) = bitand(bitshift(duration1, -16), 255);
-            bytes(06) = bitand(bitshift(duration1, -08), 255);
-            bytes(07) = bitand(bitshift(duration1, -00), 255);
-            bytes(08) = bitand(bitshift(repetitions, -16), 255);
-            bytes(09) = bitand(bitshift(repetitions, -08), 255);
-            bytes(10) = bitand(bitshift(repetitions, -00), 255);
+            bytes(02) = bitand(bitshift(duration0, -24), 255);
+            bytes(03) = bitand(bitshift(duration0, -16), 255);
+            bytes(04) = bitand(bitshift(duration0, -08), 255);
+            bytes(05) = bitand(bitshift(duration0, -00), 255);
+            bytes(06) = bitand(bitshift(duration1, -24), 255);
+            bytes(07) = bitand(bitshift(duration1, -16), 255);
+            bytes(08) = bitand(bitshift(duration1, -08), 255);
+            bytes(09) = bitand(bitshift(duration1, -00), 255);
+            bytes(10) = bitand(bitshift(repetitions, -24), 255);
+            bytes(11) = bitand(bitshift(repetitions, -16), 255);
+            bytes(12) = bitand(bitshift(repetitions, -08), 255);
+            bytes(13) = bitand(bitshift(repetitions, -00), 255);
         end
     end
 end
