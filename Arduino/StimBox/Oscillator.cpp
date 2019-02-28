@@ -1,8 +1,21 @@
+/**
+ * @file Oscillator.cpp
+ * @author Leonardo Molina (leonardomt@gmail.com).
+ * @date 2016-12-03
+ * @version 1.1.190228
+ * 
+**/
+
 #include <Arduino.h>
 #include "tools.h"
 #include "Oscillator.h"
 
 namespace bridge {
+	Oscillator::Oscillator() :
+	function(function)
+	{
+	}
+	
 	void Oscillator::Start(int8_t pin, bool state, uint32_t delay, uint32_t durationLow, uint32_t durationHigh, uint32_t phases) {
 		/*
 			Set a square wave. Start with !state for a given delay, then toggle between state and !state for a given number of repetitions, using durationLow and durationHigh for low and high states, respectively. When delay equals zero, pin is never set to !state.
@@ -21,6 +34,10 @@ namespace bridge {
 		this->port = BRIDGE_BASEREG(pin);
 		this->mask = BRIDGE_BITMASK(pin);
 		pinMode(pin, OUTPUT);
+	}
+	
+	void Oscillator::SetCallback(Function function) {
+		this->function = function;
 	}
 	
 	void Oscillator::Start(int8_t pin, uint32_t duration) {
@@ -68,6 +85,8 @@ namespace bridge {
 			BRIDGE_WRITE_HIGH(port, mask);
 		else
 			BRIDGE_WRITE_LOW(port, mask);
+		if (function)
+			function(this, state);
 	}
 	
 	void Oscillator::Stop() {

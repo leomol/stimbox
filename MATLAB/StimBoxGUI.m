@@ -1,5 +1,5 @@
 % 2019-02-25. Leonardo Molina.
-% 2019-02-26. Last modified.
+% 2019-02-28. Last modified.
 classdef StimBoxGUI < handle
     properties (Access = private)
         handles
@@ -8,6 +8,7 @@ classdef StimBoxGUI < handle
         startState = 1
         colors = struct('success', [1.00, 1.00, 1.00], 'failure', [1.00, 0.25, 0.25])
         
+        tone = [2250, 1]
         duration0 = 1
         duration1 = 1
         repetitions = 10
@@ -28,6 +29,12 @@ classdef StimBoxGUI < handle
             w = 150;
             h = 30;
             
+            uicontrol('Position', [0, 6 * h, w, h], 'Style', 'Text', 'String', 'Tone duration (s):');
+            obj.handles.tone(2) = uicontrol('Position', [w, 6 * h, w, h], 'Style', 'Edit', 'String', sprintf('%d', obj.tone(2)), 'Callback', @(h, ~)obj.validate(h));
+            
+            uicontrol('Position', [0, 5 * h, w, h], 'Style', 'Text', 'String', 'Tone frequency (Hz):');
+            obj.handles.tone(1) = uicontrol('Position', [w, 5 * h, w, h], 'Style', 'Edit', 'String', sprintf('%d', obj.tone(1)), 'Callback', @(h, ~)obj.validate(h));
+            
             uicontrol('Position', [0, 4 * h, w, h], 'Style', 'Text', 'String', 'Duration OFF (s):');
             obj.handles.duration0 = uicontrol('Position', [w, 4 * h, w, h], 'Style', 'Edit', 'String', sprintf('%d', obj.duration0), 'Callback', @(h, ~)obj.validate(h));
             
@@ -43,14 +50,13 @@ classdef StimBoxGUI < handle
             obj.handles.button = uicontrol('Position', [w, 0 * h, w, h], 'Style', 'PushButton', 'String', 'Start', 'Callback', @(h, ~)obj.toggle);
             
             p = obj.handles.figure.Position;
-            obj.handles.figure.Position = [p(1), p(2), 2 * w, 5 * h];
+            obj.handles.figure.Position = [p(1), p(2), 2 * w, 7 * h];
             
-            obj.ticker = timer();
             obj.updateGUI();
         end
         
         function delete(obj)
-            obj.deleteTimer();
+            delete(obj.ticker);
             obj.stop();
             pause(5e-3);
             obj.figureClosed();
@@ -63,6 +69,7 @@ classdef StimBoxGUI < handle
             end
             try
                 obj.stimBox = StimBox(port);
+                obj.stimBox.register('DataReceived', @obj.onDataReceived);
                 success = true;
             catch e
                 errordlg(e.message, sprintf('%s - Error', mfilename('class')), 'modal');
@@ -72,9 +79,7 @@ classdef StimBoxGUI < handle
                 obj.port = port;
                 h.BackgroundColor = obj.colors.success;
                 obj.handles.button.Enable = 'off';
-                obj.deleteTimer();
-                obj.ticker = timer('TimerFcn', @(~, ~)enable(obj.handles.button, true), 'StartDelay', 0.5, 'ExecutionMode', 'singleShot');
-                start(obj.ticker);
+                obj.ticker = Ticker.Delay(@(~, ~)obj.tickerCallback(), 1);
                 obj.status = 'connected';
                 obj.updateGUI();
             else
@@ -83,6 +88,10 @@ classdef StimBoxGUI < handle
                 obj.status = 'disconnected';
                 obj.updateGUI();
             end
+        end
+        
+        function beep(obj)
+            Tools.tone(obj.tone(1), obj.tone(2));
         end
         
         function connected = get.connected(obj)
@@ -99,11 +108,10 @@ classdef StimBoxGUI < handle
     end
     
     methods (Access = private)
-        function deleteTimer(obj)
-            if isvalid(obj.ticker)
-                stop(obj.ticker);
-                delete(obj.ticker);
-            end
+
+        function tickerCallback(obj)
+            obj.stop()
+            obj.handles.button.Enable = 'on';
         end
         
         function figureClosed(obj)
@@ -114,6 +122,12 @@ classdef StimBoxGUI < handle
         function write(obj, bytes)
             if obj.connected
                 obj.stimBox.write(bytes);
+            end
+        end
+        
+        function onDataReceived(obj, state)
+            if state
+                obj.beep();
             end
         end
         
@@ -150,6 +164,24 @@ classdef StimBoxGUI < handle
         
         function validate(obj, h)
             switch h
+                case obj.handles.tone(2)
+                    [number, success] = validateRange(h.String, 0, 60);
+                    if success
+                        obj.tone(2) = number;
+                        h.BackgroundColor = obj.colors.success;
+                    else
+                        h.String = sprintf('%.2f', obj.tone(2));
+                        h.BackgroundColor = obj.colors.failure;
+                    end
+                case obj.handles.tone(1)
+                    [number, success] = validateRange(h.String, 1e2, 5e3);
+                    if success
+                        obj.tone(1) = number;
+                        h.BackgroundColor = obj.colors.success;
+                    else
+                        h.String = sprintf('%d', obj.tone(1));
+                        h.BackgroundColor = obj.colors.failure;
+                    end
                 case obj.handles.duration0
                     [number, success] = validateRange(h.String, 0, 4294.95);
                     if success
@@ -201,13 +233,5 @@ function [number, success] = validateInteger(text, minValue, maxValue)
     catch
         number = 0;
         success = false;
-    end
-end
-
-function enable(handle, state)
-    if state
-        set(handle, 'Enable', 'on');
-    else
-        set(handle, 'Enable', 'off');
     end
 end

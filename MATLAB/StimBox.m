@@ -1,6 +1,6 @@
 % 2019-02-25. Leonardo Molina.
-% 2019-02-26. Last modified.
-classdef StimBox < handle
+% 2019-02-28. Last modified.
+classdef StimBox < Event
     properties (Constant)
         baudrate = 115200
     end
@@ -14,9 +14,15 @@ classdef StimBox < handle
             % StimBox(port)
             % Create a connection to the given serial port.
             
-            delete(obj.device);
-            StimBox.setSession(struct('device', serial(port, 'Baudrate', StimBox.baudrate)));
-            fopen(obj.device);
+            StimBox.setDevice(serial(port, 'Baudrate', StimBox.baudrate));
+            ticker = Ticker.Repeat(@obj.read, 2 * Ticker.dt);
+            StimBox.setTicker(ticker);
+            try
+                fopen(obj.device);
+            catch e
+                delete(ticker);
+                rethrow(e);
+            end
         end
         
         function delete(obj)
@@ -27,8 +33,7 @@ classdef StimBox < handle
         end
         
         function device = get.device(~)
-            session = StimBox.getSession();
-            device = session.device;
+            device = StimBox.getSession().device;
         end
         
         function write(obj, varargin)
@@ -43,19 +48,51 @@ classdef StimBox < handle
         end
     end
     
+    methods (Access = private)
+        function read(obj)
+            if isvalid(obj.device)
+                nb = obj.device.BytesAvailable;
+                if nb > 0
+                    bytes = fread(obj.device, nb, 'uint8');
+                    for b = 1:nb
+                        obj.invoke('DataReceived', bytes(b));
+                    end
+                end
+            end
+            drawnow();
+        end
+    end
+    
     methods (Static)
         function session = getSession()
             global stimBoxSession;
             if ~isstruct(stimBoxSession)
                 port = 'COMX';
-                stimBoxSession = struct('device', serial(port, 'Baudrate', StimBox.baudrate));
+                stimBoxSession = struct();
+                stimBoxSession.device = serial(port, 'Baudrate', StimBox.baudrate);
+                stimBoxSession.device.Timeout = Ticker.dt;
+                stimBoxSession.ticker = [];
             end
             session = stimBoxSession;
         end
         
-        function setSession(session)
+        function setDevice(device)
             global stimBoxSession;
-            stimBoxSession = session;
+            previousDevice = StimBox.getSession().device;
+            if isobject(previousDevice) && isvalid(previousDevice)
+                fclose(previousDevice);
+                delete(previousDevice);
+            end
+            stimBoxSession.device = device;
+        end
+        
+        function setTicker(ticker)
+            global stimBoxSession;
+            previousTicker = StimBox.getSession().ticker;
+            if isobject(previousTicker)
+                delete(previousTicker);
+            end
+            stimBoxSession.ticker = ticker;
         end
         
         function bytes = encode(pin, state, duration0, duration1, repetitions)

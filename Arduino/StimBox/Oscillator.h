@@ -1,3 +1,11 @@
+/**
+ * @file Oscillator.h
+ * @author Leonardo Molina (leonardomt@gmail.com).
+ * @date 2016-12-03
+ * @version 1.1.190228
+ * 
+**/
+
 #ifndef BRIDGE_Oscillator_H
 #define BRIDGE_Oscillator_H
 
@@ -8,19 +16,24 @@
 namespace bridge {
 	class Oscillator : public Stepper {
 		public:
-			Oscillator() {};
+			/// Type of function to call when a result is available.
+			typedef void (*Function) (Oscillator* oscillator, bool state);
+			
+			Oscillator();
 			void Start(int8_t pin, uint32_t duration);
 			void Start(int8_t pin, bool state, uint32_t delay, uint32_t durationLow, uint32_t durationHigh, uint32_t phases);
 			void Stop();
 			bool IsIdle();
 			int8_t GetPin();
 			void Step() override;
+			void SetCallback(Function function);
 		private:
 			enum Epochs {
 				Idle,
 				Setup,
 				Running
 			};
+			Function function;
 			Epochs epoch;
 			volatile BRIDGE_IO_REG_TYPE* port;	///< Hardware address of the pin.
 			BRIDGE_IO_REG_TYPE mask;			///< Mask to single out in the hardware address.
@@ -34,7 +47,6 @@ namespace bridge {
 			uint32_t durationHigh;				///< Duration of high phase.
 			uint32_t phases;					///< Phase control.
 			void Write(bool state);
-			
 	};
 }
 

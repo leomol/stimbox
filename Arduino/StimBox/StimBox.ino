@@ -3,17 +3,27 @@
  * @author Leonardo Molina (leonardomt@gmail.com).
  * @file StimBox.ino
  * @date 2019-02-25
- * @version: 0.1.190226
+ * @version: 0.1.190228
 */
 
 #include "Oscillator.h"
 using namespace bridge;
 
 /// Pulse oscillator.
-Oscillator oscillator = Oscillator();
+Oscillator oscillator;
 
 void setup() {
 	Serial.begin(115200);
+	oscillator = Oscillator();
+	oscillator.SetCallback(toggle);
+	
+	// // Demo.
+	// uint8_t pin = 2;
+	// bool state = 1;
+	// uint32_t durationLow = 700000;
+	// uint32_t durationHigh = 300000;
+	// uint32_t repetitions = 999;
+	// oscillator.Start(pin, state, 0, durationLow, durationHigh, 2 * repetitions);
 }
 
 /// Arduino library loop: Update all steppers and read serial port.
@@ -46,4 +56,8 @@ uint32_t read4() {
 	buffer |= (uint32_t) read1() <<  8;
 	buffer |= (uint32_t) read1() <<  0;
 	return buffer;
+}
+
+void toggle(Oscillator* oscillator, bool state) {
+	Serial.write(state);
 }
