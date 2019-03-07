@@ -1,14 +1,15 @@
 % 2019-02-25. Leonardo Molina.
-% 2019-02-28. Last modified.
+% 2019-03-07. Last modified.
 classdef StimBoxGUI < handle
     properties (Access = private)
         handles
         stimBox
-        pin = 2
+        stimPin = 2
+        tonePin = 8
         startState = 1
         colors = struct('success', [1.00, 1.00, 1.00], 'failure', [1.00, 0.25, 0.25])
         
-        tone = [2250, 1]
+        tone = [2250, 0.1]
         duration0 = 1
         duration1 = 1
         repetitions = 10
@@ -29,11 +30,11 @@ classdef StimBoxGUI < handle
             w = 150;
             h = 30;
             
-            uicontrol('Position', [0, 6 * h, w, h], 'Style', 'Text', 'String', 'Tone duration (s):');
-            obj.handles.tone(2) = uicontrol('Position', [w, 6 * h, w, h], 'Style', 'Edit', 'String', sprintf('%d', obj.tone(2)), 'Callback', @(h, ~)obj.validate(h));
+            uicontrol('Position', [0, 6 * h, w, h], 'Style', 'Text', 'String', 'Tone frequency (Hz):');
+            obj.handles.tone(1) = uicontrol('Position', [w, 6 * h, w, h], 'Style', 'Edit', 'String', sprintf('%d', obj.tone(1)), 'Callback', @(h, ~)obj.validate(h));
             
-            uicontrol('Position', [0, 5 * h, w, h], 'Style', 'Text', 'String', 'Tone frequency (Hz):');
-            obj.handles.tone(1) = uicontrol('Position', [w, 5 * h, w, h], 'Style', 'Edit', 'String', sprintf('%d', obj.tone(1)), 'Callback', @(h, ~)obj.validate(h));
+            uicontrol('Position', [0, 5 * h, w, h], 'Style', 'Text', 'String', 'Tone duration (s):');
+            obj.handles.tone(2) = uicontrol('Position', [w, 5 * h, w, h], 'Style', 'Edit', 'String', sprintf('%.2f', obj.tone(2)), 'Callback', @(h, ~)obj.validate(h));
             
             uicontrol('Position', [0, 4 * h, w, h], 'Style', 'Text', 'String', 'Duration OFF (s):');
             obj.handles.duration0 = uicontrol('Position', [w, 4 * h, w, h], 'Style', 'Edit', 'String', sprintf('%d', obj.duration0), 'Callback', @(h, ~)obj.validate(h));
@@ -99,11 +100,11 @@ classdef StimBoxGUI < handle
         end
         
         function stop(obj)
-            obj.write(StimBox.encode(obj.pin, 0, 0, 0, 0));
+            obj.write(StimBox.encode(obj.stimPin, 0, 0, 0, 0, obj.tonePin, 0, 0));
         end
         
         function start(obj)
-            obj.write(StimBox.encode(obj.pin, obj.startState, obj.duration0, obj.duration1, obj.repetitions));
+            obj.write(StimBox.encode(obj.stimPin, obj.startState, obj.duration0, obj.duration1, obj.repetitions, obj.tonePin, obj.tone(1), obj.tone(2)));
         end
     end
     

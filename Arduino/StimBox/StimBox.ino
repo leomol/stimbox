@@ -11,19 +11,15 @@ using namespace bridge;
 
 /// Pulse oscillator.
 Oscillator oscillator;
+uint8_t tonePin = 8;
+uint32_t toneFrequency = 2500;
+uint32_t toneDuration = 500;
+
 
 void setup() {
 	Serial.begin(115200);
 	oscillator = Oscillator();
 	oscillator.SetCallback(toggle);
-	
-	// // Demo.
-	// uint8_t pin = 2;
-	// bool state = 1;
-	// uint32_t durationLow = 700000;
-	// uint32_t durationHigh = 300000;
-	// uint32_t repetitions = 999;
-	// oscillator.Start(pin, state, 0, durationLow, durationHigh, 2 * repetitions);
 }
 
 /// Arduino library loop: Update all steppers and read serial port.
@@ -38,6 +34,12 @@ void loop() {
 		uint32_t durationLow = read4();
 		uint32_t durationHigh = read4();
 		uint32_t repetitions = read4();
+		
+		tonePin = read1();
+		toneFrequency = read4();
+		toneDuration = read4();
+		
+		noTone(tonePin);
 		oscillator.Start(pin, state, 0, durationLow, durationHigh, 2 * repetitions);
 	}
 }
@@ -59,5 +61,9 @@ uint32_t read4() {
 }
 
 void toggle(Oscillator* oscillator, bool state) {
+	if (state) {
+		noTone(tonePin);
+		tone(tonePin, toneFrequency, toneDuration);
+	}
 	Serial.write(state);
 }
