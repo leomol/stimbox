@@ -3,7 +3,7 @@
  * @author Leonardo Molina (leonardomt@gmail.com).
  * @file StimBox.ino
  * @date 2019-02-25
- * @version: 0.1.190228
+ * @version: 0.1.190307
 */
 
 #include "Oscillator.h"
@@ -11,9 +11,9 @@ using namespace bridge;
 
 /// Pulse oscillator.
 Oscillator oscillator;
-uint8_t tonePin = 8;
+uint8_t tonePin = 52;
 uint32_t toneFrequency = 2500;
-uint32_t toneDuration = 500;
+uint32_t toneDuration = 100;
 
 
 void setup() {
@@ -63,7 +63,8 @@ uint32_t read4() {
 void toggle(Oscillator* oscillator, bool state) {
 	if (state) {
 		noTone(tonePin);
-		tone(tonePin, toneFrequency, toneDuration);
+		if (toneDuration > 0 && toneFrequency > 0)
+			tone(tonePin, toneFrequency, toneDuration);
 	}
 	Serial.write(state);
 }

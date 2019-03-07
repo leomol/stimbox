@@ -5,7 +5,7 @@ classdef StimBoxGUI < handle
         handles
         stimBox
         stimPin = 2
-        tonePin = 8
+        tonePin = 52
         startState = 1
         colors = struct('success', [1.00, 1.00, 1.00], 'failure', [1.00, 0.25, 0.25])
         
