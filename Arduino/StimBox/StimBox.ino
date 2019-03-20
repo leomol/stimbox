@@ -1,46 +1,95 @@
 /**
- * @brief Send a train of pulses to the specified pin.
+ * @brief Send a train of pulses to the specified pin. Play noise or a tone.
  * @author Leonardo Molina (leonardomt@gmail.com).
  * @file StimBox.ino
  * @date 2019-02-25
- * @version: 0.1.190307
+ * @version: 0.1.190320
 */
 
+#include "Noise.h"
 #include "Oscillator.h"
 using namespace bridge;
 
-/// Pulse oscillator.
-Oscillator oscillator;
-uint8_t tonePin = 52;
-uint32_t toneFrequency = 2500;
-uint32_t toneDuration = 100;
+enum class Modes {
+	Stop,
+	Tone,
+	Noise
+};
 
+Modes mode = Modes::Stop;
+
+/// Pulse oscillator.
+Noise noise = Noise();
+Oscillator oscillator = Oscillator();
+
+uint8_t speakerPin = 52;
+uint32_t playDuration = 500000;
+uint32_t toneFrequency = 2250;
+uint32_t minFrequency = 2000;
+uint32_t maxFrequency = 2500;
 
 void setup() {
 	Serial.begin(115200);
-	oscillator = Oscillator();
 	oscillator.SetCallback(toggle);
+	
+	// // Demo.
+	// uint8_t pin = 2;
+	// bool state = 1;
+	// uint32_t durationLow = 700000;
+	// uint32_t durationHigh = 300000;
+	// uint32_t repetitions = 999;
+	// oscillator.Start(speakerPin, state, 0, durationLow, durationHigh, 2 * repetitions);
+	// mode = Modes::Noise;
 }
 
 /// Arduino library loop: Update all steppers and read serial port.
 void loop() {
+	noise.Step();
 	oscillator.Step();
 	
 	/// Read Serial port.
 	while (Serial.available()) {
-		uint8_t buffer = read1();
-		uint8_t pin = buffer & B01111111;
-		bool state = (buffer & B10000000) == B10000000;
-		uint32_t durationLow = read4();
-		uint32_t durationHigh = read4();
-		uint32_t repetitions = read4();
-		
-		tonePin = read1();
-		toneFrequency = read4();
-		toneDuration = read4();
-		
-		noTone(tonePin);
-		oscillator.Start(pin, state, 0, durationLow, durationHigh, 2 * repetitions);
+		mode = static_cast<Modes>(read1());
+		switch (mode) {
+			case Modes::Tone:
+			{
+				uint8_t buffer = read1();
+				uint8_t pin = buffer & B01111111;
+				bool state = (buffer & B10000000) == B10000000;
+				uint32_t durationLow = read4();
+				uint32_t durationHigh = read4();
+				uint32_t repetitions = read4();
+				speakerPin = read1();
+				playDuration = read4();
+				toneFrequency = read4();
+				noTone(speakerPin);
+				oscillator.Start(pin, state, 0, durationLow, durationHigh, 2 * repetitions);
+				break;
+			}
+			case Modes::Noise:
+			{
+				uint8_t buffer = read1();
+				uint8_t pin = buffer & B01111111;
+				bool state = (buffer & B10000000) == B10000000;
+				uint32_t durationLow = read4();
+				uint32_t durationHigh = read4();
+				uint32_t repetitions = read4();
+				speakerPin = read1();
+				playDuration = read4();
+				minFrequency = read4();
+				maxFrequency = read4();
+				noTone(speakerPin);
+				oscillator.Start(pin, state, 0, durationLow, durationHigh, 2 * repetitions);
+				break;
+			}
+			case Modes::Stop:
+			{
+				noTone(speakerPin);
+				oscillator.Stop();
+				noise.Stop();
+				break;
+			}
+		}
 	}
 }
 
@@ -62,9 +111,13 @@ uint32_t read4() {
 
 void toggle(Oscillator* oscillator, bool state) {
 	if (state) {
-		noTone(tonePin);
-		if (toneDuration > 0 && toneFrequency > 0)
-			tone(tonePin, toneFrequency, toneDuration);
+		if (mode == Modes::Tone) {
+			noTone(speakerPin);
+			if (playDuration > 0 && toneFrequency > 0)
+				tone(speakerPin, toneFrequency, playDuration / 1000);
+		} else if (mode == Modes::Noise) {
+			noise.Start(speakerPin, minFrequency, maxFrequency, playDuration);
+		}
 	}
 	Serial.write(state);
 }
